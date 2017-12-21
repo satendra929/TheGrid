@@ -1,32 +1,94 @@
 from graphics import *
 from time import sleep
 import math
+import random
+import copy
+import threading
+from threading import Thread
+from multiprocessing import Process
 from heapq import heappush, heappop
 
+status=True
+
 def main() :
+    global status
     win= GraphWin("TheGrid", 500, 500)
     win.setBackground('black')
     draw_grid(win)
+    #For Fist point
     startX=250
     startY=250
     stpt= Point(startX,startY)
     stcir=Circle(stpt,5)
     stcir.setFill('red')
     stcir.draw(win)
-    endX=100
-    endY=0
+    endX=150
+    endY=200
     ept= Point(endX,endY)
     ecir=Circle(ept,5)
     ecir.setFill('blue')
     ecir.draw(win)
+    #For Second point
+    startX2=450
+    startY2=450
+    stpt2= Point(startX2,startY2)
+    stcir2=Circle(stpt2,5)
+    stcir2.setFill('red')
+    stcir2.draw(win)
+    endX2=250
+    endY2=300
+    ept2= Point(endX2,endY2)
+    ecir2=Circle(ept2,5)
+    ecir2.setFill('blue')
+    ecir2.draw(win)
     grid=[50,100,150,200,250,300,350,400,450]
+    #First point
     pt= Point(startX,startY)
     cir=Circle(pt,5)
     cir.setFill('green')
     cir.draw(win)
-    find_path(cir,startX,startY,endX,endY,grid)
+    #second point
+    pt2= Point(startX2,startY2)
+    cir2=Circle(pt2,5)
+    cir2.setFill('yellow')
+    cir2.draw(win)
+    ppoints=pedestrians(win)
+    startp=ppoints[0]
+    endp=ppoints[1]
+    cir_obj=ppoints[2]
+    path=find_path(cir,startX,startY,endX,endY,grid)
+    path2=find_path(cir2,startX2,startY2,endX2,endY2,grid)
+    #Process(target = drive(startX,startY,cir,path)).start()
+    Thread(target=drive,args=(startX,startY,cir,path)).start()
+    Thread(target=drive,args=(startX2,startY2,cir2,path2)).start()
+    Thread(target=move_pedestrians,args=(startp,cir_obj)).start()
     win.getMouse()
+    status=False
     win.close()
+
+def drive (startX,startY,cir,path) :
+    cX=startX
+    cY=startY
+    for ind in range (len(path[0])) :
+        px=path[0][ind]
+        py=path[1][ind]
+        cir.move(px-cX,py-cY)
+        cX=px
+        cY=py
+        sleep(0.01)
+    return True
+
+def move_pedestrians(startp,cir_obj) :
+    while status==True :
+        for co in range(len(startp)) :
+            positionsx=[startp[co][0]+1,startp[co][0]-1,startp[co][0]]
+            positionsy=[startp[co][1]+1,startp[co][1]-1,startp[co][1]]
+            ppx=positionsx[random.randint(0,2)]
+            ppy=positionsx[random.randint(0,2)]
+            cir_obj[co].move(ppx-startp[co][0],ppy-startp[co][0])
+            startp[co][0]=ppx
+            startp[co][1]=ppy
+    return True
 
 def draw_grid(win) :
     l=Line(Point(50,500),Point(50,0))
@@ -87,6 +149,24 @@ def draw_grid(win) :
     lh8.setFill('green')
     lh8.draw(win)
 
+def pedestrians(win) :
+    spoints=[]
+    epoints=[]
+    cir_obj=[]
+    for i in range(10) :
+        spoints.append([random.randint(0,500),random.randint(0,500)])
+        epoints.append([random.randint(0,500),random.randint(0,500)])
+    for j in spoints :
+        pX=j[0]
+        pY=j[1]
+        ppt= Point(pX,pY)
+        pcir=Circle(ppt,2)
+        pcir.setFill('white')
+        pcir.draw(win)
+        cir_obj.append(pcir)
+    return (spoints,epoints,cir_obj)
+    
+
 def is_path(x,y,grid) :
     for c in grid :
         if x==c :
@@ -96,7 +176,7 @@ def is_path(x,y,grid) :
     return False
 
 def heuristic(x,y,endX,endY) :
-    print endX,endY
+    #print endX,endY
     a=math.fabs(x-endX)
     b=math.fabs(y-endY)
     return math.sqrt((a+b))
@@ -114,31 +194,33 @@ def successors(x,y,grid) :
     return succ
 
 def find_path(cir,startX,startY,endX,endY,grid) :
-    print endX,endY
     fringe=[]
     visited=[]
     cX=startX
     cY=startY
+    pathx=[cX]
+    pathy=[cY]
     visited.append((cX,cY))
     heu=heuristic(startX,startY,endX,endY)
-    heappush(fringe,(heu,(startX,startY)))
+    heappush(fringe,(heu,(startX,startY,pathx,pathy)))
     while fringe[0]!= IndexError :
         state=heappop(fringe)
         startX=state[1][0]
         startY=state[1][1]
+        pX=state[1][2]
+        pY=state[1][3]
         if startX==endX and startY==endY :
-            return True
-        else :
-            cir.move(startX-cX,startY-cY)
-            cX=startX
-            cY=startY
-            sleep(0.01)
+            return (pX,pY)
         for s in successors(startX,startY,grid) :
             tempX=s[0]
             tempY=s[1]
+            temppX=copy.deepcopy(pX)
+            temppY=copy.deepcopy(pY)
             if (tempX,tempY) not in visited :
+                temppX.append(tempX)
+                temppY.append(tempY)
                 tempheu=heuristic(tempX,tempY,endX,endY)
-                heappush(fringe,(tempheu,(tempX,tempY)))
+                heappush(fringe,(tempheu,(tempX,tempY,temppX,temppY)))
                 visited.append((tempX,tempY))
 
 main()
