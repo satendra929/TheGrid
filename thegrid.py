@@ -1,82 +1,87 @@
 from graphics import *
+import pygame
 from time import sleep
 import math
 import random
 import copy
 import threading
+import time
+time.clock()
 from threading import Thread
 from multiprocessing import Process
 from heapq import heappush, heappop
 
 status=True
 
+#pygame integration
+
+
+
+crashed=False
+clock=pygame.time.Clock()
+
+
 def main() :
     global status
-    win= GraphWin("TheGrid", 500, 500)
-    win.setBackground('black')
-    draw_grid(win)
-    #For Fist point
-    startX=250
-    startY=250
-    stpt= Point(startX,startY)
-    stcir=Circle(stpt,5)
-    stcir.setFill('red')
-    stcir.draw(win)
-    endX=150
-    endY=200
-    ept= Point(endX,endY)
-    ecir=Circle(ept,5)
-    ecir.setFill('blue')
-    ecir.draw(win)
-    #For Second point
+    global crashed
+    pygame.init()
+    dis=pygame.display.set_mode((500,500))
+    pygame.display.set_caption('TheGrid')
+    startX=450
+    startY=100
+    endX=50
+    endY=400
     startX2=450
     startY2=450
-    stpt2= Point(startX2,startY2)
-    stcir2=Circle(stpt2,5)
-    stcir2.setFill('red')
-    stcir2.draw(win)
-    endX2=250
-    endY2=300
-    ept2= Point(endX2,endY2)
-    ecir2=Circle(ept2,5)
-    ecir2.setFill('blue')
-    ecir2.draw(win)
-    grid=[50,100,150,200,250,300,350,400,450]
-    #First point
-    pt= Point(startX,startY)
-    cir=Circle(pt,5)
-    cir.setFill('green')
-    cir.draw(win)
-    #second point
-    pt2= Point(startX2,startY2)
-    cir2=Circle(pt2,5)
-    cir2.setFill('yellow')
-    cir2.draw(win)
-    ppoints=pedestrians(win)
-    startp=ppoints[0]
-    endp=ppoints[1]
-    cir_obj=ppoints[2]
-    path=find_path(cir,startX,startY,endX,endY,grid)
-    path2=find_path(cir2,startX2,startY2,endX2,endY2,grid)
-    #Process(target = drive(startX,startY,cir,path)).start()
-    Thread(target=drive,args=(startX,startY,cir,path)).start()
-    Thread(target=drive,args=(startX2,startY2,cir2,path2)).start()
-    Thread(target=move_pedestrians,args=(startp,cir_obj)).start()
-    win.getMouse()
-    status=False
-    win.close()
+    endX2=50
+    endY2=50
+    draw_grid(dis)
+    path=find_path(startX,startY,endX,endY,dis)
+    path2=find_path(startX2,startY2,endX2,endY2,dis)
+    carImg=pygame.image.load('taxi.png')
+    carImg=pygame.transform.scale(carImg,(20,20))
+    carImg2=pygame.image.load('taxi.png')
+    carImg2=pygame.transform.scale(carImg,(20,20))
+    Thread(target=drive,args=(startX,startY,path,carImg,dis)).start()
+    Thread(target=drive,args=(startX2,startY2,path2,carImg2,dis)).start()
+    crashed=False
+    while crashed==False :
+        for event in pygame.event.get() :
+            if event.type==pygame.QUIT :
+                crashed=True
+        pygame.display.update()
+        clock.tick(30)
+    pygame.quit()
 
-def drive (startX,startY,cir,path) :
+
+def drive (startX,startY,path,carImg,dis) :
     cX=startX
     cY=startY
+    ori=0
     for ind in range (len(path[0])) :
         px=path[0][ind]
         py=path[1][ind]
-        cir.move(px-cX,py-cY)
+        draw_grid(dis)
+        if cX-px != 0 :
+            if cX-px==1 :
+                carImg=pygame.image.load('taxiRight.png')
+                carImg=pygame.transform.scale(carImg,(20,20))
+            else :
+                carImg=pygame.image.load('taxiLeft.png')
+                carImg=pygame.transform.scale(carImg,(20,20))
+        if cY-py != 0 :
+            if cY-py==1 :
+                carImg=pygame.image.load('taxiDown.png')
+                carImg=pygame.transform.scale(carImg,(20,20))
+            else :
+                carImg=pygame.image.load('taxi.png')
+                carImg=pygame.transform.scale(carImg,(20,20))
         cX=px
         cY=py
-        sleep(0.01)
-    return True
+        dis.blit(carImg,(px-10,py-10))
+        pygame.display.update()
+        clock.tick(30)
+    return
 
 def move_pedestrians(startp,cir_obj) :
     while status==True :
@@ -90,70 +95,42 @@ def move_pedestrians(startp,cir_obj) :
             startp[co][1]=ppy
     return True
 
-def draw_grid(win) :
-    l=Line(Point(50,500),Point(50,0))
-    l.setFill('green')
-    l.draw(win)
-    l1=Line(Point(100,500),Point(100,0))
-    l1.setFill('green')
-    l1.draw(win)
-    l2=Line(Point(150,500),Point(150,0))
-    l2.setFill('green')
-    l2.draw(win)
-    l3=Line(Point(200,500),Point(200,0))
-    l3.setFill('green')
-    l3.draw(win)
-    l4=Line(Point(250,500),Point(250,0))
-    l4.setFill('green')
-    l4.draw(win)
-    l5=Line(Point(300,500),Point(300,0))
-    l5.setFill('green')
-    l5.draw(win)
-    l6=Line(Point(350,500),Point(350,0))
-    l6.setFill('green')
-    l6.draw(win)
-    l7=Line(Point(400,500),Point(400,0))
-    l7.setFill('green')
-    l7.draw(win)
-    l8=Line(Point(450,500),Point(450,0))
-    l8.setFill('green')
-    l8.draw(win)
-    lh0=Line(Point(0,0),Point(500,0))
-    lh0.setFill('green')
-    lh0.draw(win)
-    lh=Line(Point(0,50),Point(500,50))
-    lh.setFill('green')
-    lh.draw(win)
-    lh1=Line(Point(0,100),Point(500,100))
-    lh1.setFill('green')
-    lh1.draw(win)
-    lh2=Line(Point(0,150),Point(500,150))
-    lh2.setFill('green')
-    lh2.draw(win)
-    lh3=Line(Point(0,200),Point(500,200))
-    lh3.setFill('green')
-    lh3.draw(win)
-    lh4=Line(Point(0,250),Point(500,250))
-    lh4.setFill('green')
-    lh4.draw(win)
-    lh5=Line(Point(0,300),Point(500,300))
-    lh5.setFill('green')
-    lh5.draw(win)
-    lh6=Line(Point(0,350),Point(500,350))
-    lh6.setFill('green')
-    lh6.draw(win)
-    lh7=Line(Point(0,400),Point(500,400))
-    lh7.setFill('green')
-    lh7.draw(win)
-    lh8=Line(Point(0,450),Point(500,450))
-    lh8.setFill('green')
-    lh8.draw(win)
+def draw_grid(dis) :
+##    l=Line(Point(50,500),Point(50,0))
+##    l.setFill('green')
+##    l.draw(win)
+    dis.fill((0,0,0))
+    pygame.draw.line(dis, (0, 0, 255), (50, 0), (50, 500),2)
+    pygame.draw.line(dis, (0, 0, 255), (100, 0), (100, 500),2)
+    pygame.draw.line(dis, (0, 0, 255), (150, 0), (150, 500),2)
+    pygame.draw.line(dis, (0, 0, 255), (200, 0), (200, 500),2)
+    pygame.draw.line(dis, (0, 0, 255), (250, 0), (250, 500),2)
+    pygame.draw.line(dis, (0, 0, 255), (300, 0), (300, 500),2)
+    pygame.draw.line(dis, (0, 0, 255), (350, 0), (350, 500),2)
+    pygame.draw.line(dis, (0, 0, 255), (400, 0), (400, 500),2)
+    pygame.draw.line(dis, (0, 0, 255), (450, 0), (450, 500),2)
+    pygame.draw.line(dis, (0, 0, 255), (0,50), (500,50),2)
+    pygame.draw.line(dis, (0, 0, 255), (0,100), (500,100),2)
+    pygame.draw.line(dis, (0, 0, 255), (0,150), (500,150),2)
+    pygame.draw.line(dis, (0, 0, 255), (0,200), (500,200),2)
+    pygame.draw.line(dis, (0, 0, 255), (0,250), (500,250),2)
+    pygame.draw.line(dis, (0, 0, 255), (0,300), (500,300),2)
+    pygame.draw.line(dis, (0, 0, 255), (0,350), (500,350),2)
+    pygame.draw.line(dis, (0, 0, 255), (0,400), (500,400),2)
+    pygame.draw.line(dis, (0, 0, 255), (0,450), (500,450),2)
+    pygame.draw.circle(dis,(255,0,0),(450,100),5)
+    pygame.draw.circle(dis,(0,255,0),(50,400),5)
+    pygame.draw.circle(dis,(255,0,0),(450,450),5)
+    pygame.draw.circle(dis,(0,255,0),(50,50),5)
+    pygame.display.update()
+    
+    
 
 def pedestrians(win) :
     spoints=[]
     epoints=[]
     cir_obj=[]
-    for i in range(10) :
+    for i in range(20) :
         spoints.append([random.randint(0,500),random.randint(0,500)])
         epoints.append([random.randint(0,500),random.randint(0,500)])
     for j in spoints :
@@ -181,19 +158,19 @@ def heuristic(x,y,endX,endY) :
     b=math.fabs(y-endY)
     return math.sqrt((a+b))
 
-def successors(x,y,grid) :
+def successors(x,y,dis) :
     succ=[]
-    if is_path(x+1,y,grid) :
+    if dis.get_at((x+1,y))!=(0,0,0) :
         succ.append((x+1,y))
-    if is_path(x,y+1,grid) :
+    if dis.get_at((x,y+1))!=(0,0,0) :
         succ.append((x,y+1))
-    if is_path(x-1,y,grid) :
+    if dis.get_at((x-1,y))!=(0,0,0) :
         succ.append((x-1,y))
-    if is_path(x,y-1,grid) :
+    if dis.get_at((x,y-1))!=(0,0,0) :
         succ.append((x,y-1))
     return succ
 
-def find_path(cir,startX,startY,endX,endY,grid) :
+def find_path(startX,startY,endX,endY,dis) :
     fringe=[]
     visited=[]
     cX=startX
@@ -211,7 +188,7 @@ def find_path(cir,startX,startY,endX,endY,grid) :
         pY=state[1][3]
         if startX==endX and startY==endY :
             return (pX,pY)
-        for s in successors(startX,startY,grid) :
+        for s in successors(startX,startY,dis) :
             tempX=s[0]
             tempY=s[1]
             temppX=copy.deepcopy(pX)
