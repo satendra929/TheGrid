@@ -60,5 +60,5 @@ while crashed==False :
     if dis.get_at((x,y-1))== (0,255,0) :
         obs=True
     pygame.display.update()
-    clock.tick(30)
+    clock.tick(60)
 pygame.quit()

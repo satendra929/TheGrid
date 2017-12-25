@@ -1,4 +1,4 @@
-from graphics import *
+#from graphics import *
 import pygame
 from time import sleep
 import math
@@ -8,7 +8,6 @@ import threading
 import time
 time.clock()
 from threading import Thread
-from multiprocessing import Process
 from heapq import heappush, heappop
 
 status=True
@@ -35,22 +34,23 @@ def main() :
     startY2=450
     endX2=50
     endY2=50
-    draw_grid(dis)
+    draw_grid(dis,True)
     path=find_path(startX,startY,endX,endY,dis)
     path2=find_path(startX2,startY2,endX2,endY2,dis)
     carImg=pygame.image.load('taxi.png')
     carImg=pygame.transform.scale(carImg,(20,20))
     carImg2=pygame.image.load('taxi.png')
     carImg2=pygame.transform.scale(carImg,(20,20))
+    startp=pedestrians(dis)
     Thread(target=drive,args=(startX,startY,path,carImg,dis)).start()
     Thread(target=drive,args=(startX2,startY2,path2,carImg2,dis)).start()
+    Thread(target=move_pedestrians,args=(startp,dis)).start()
     crashed=False
     while crashed==False :
         for event in pygame.event.get() :
             if event.type==pygame.QUIT :
                 crashed=True
-        pygame.display.update()
-        clock.tick(30)
+                status=False
     pygame.quit()
 
 
@@ -61,7 +61,7 @@ def drive (startX,startY,path,carImg,dis) :
     for ind in range (len(path[0])) :
         px=path[0][ind]
         py=path[1][ind]
-        draw_grid(dis)
+        draw_grid(dis,False)
         if cX-px != 0 :
             if cX-px==1 :
                 carImg=pygame.image.load('taxiRight.png')
@@ -80,22 +80,28 @@ def drive (startX,startY,path,carImg,dis) :
         cY=py
         dis.blit(carImg,(px-10,py-10))
         pygame.display.update()
-        clock.tick(30)
+        clock.tick(45)
+        #sleep(0.01)
     return
 
-def move_pedestrians(startp,cir_obj) :
+def move_pedestrians(startp,dis) :
+    global status
+    print startp
     while status==True :
+        draw_grid(dis,False)
         for co in range(len(startp)) :
             positionsx=[startp[co][0]+1,startp[co][0]-1,startp[co][0]]
             positionsy=[startp[co][1]+1,startp[co][1]-1,startp[co][1]]
             ppx=positionsx[random.randint(0,2)]
-            ppy=positionsx[random.randint(0,2)]
-            cir_obj[co].move(ppx-startp[co][0],ppy-startp[co][0])
+            ppy=positionsy[random.randint(0,2)]
+            pygame.draw.circle(dis,(255,255,255),(ppx,ppy),2)
             startp[co][0]=ppx
             startp[co][1]=ppy
+        pygame.display.update()
+        sleep(0.01)
     return True
 
-def draw_grid(dis) :
+def draw_grid(dis,ini) :
 ##    l=Line(Point(50,500),Point(50,0))
 ##    l.setFill('green')
 ##    l.draw(win)
@@ -122,35 +128,41 @@ def draw_grid(dis) :
     pygame.draw.circle(dis,(0,255,0),(50,400),5)
     pygame.draw.circle(dis,(255,0,0),(450,450),5)
     pygame.draw.circle(dis,(0,255,0),(50,50),5)
-    pygame.display.update()
+    if ini==True :
+        pygame.display.update()
+        return
+    else :
+        return
     
     
 
-def pedestrians(win) :
+def pedestrians(dis) :
     spoints=[]
-    epoints=[]
+    #epoints=[]
     cir_obj=[]
-    for i in range(20) :
+    for i in range(2) :
         spoints.append([random.randint(0,500),random.randint(0,500)])
-        epoints.append([random.randint(0,500),random.randint(0,500)])
+        #epoints.append([random.randint(0,500),random.randint(0,500)])
     for j in spoints :
         pX=j[0]
         pY=j[1]
-        ppt= Point(pX,pY)
-        pcir=Circle(ppt,2)
-        pcir.setFill('white')
-        pcir.draw(win)
-        cir_obj.append(pcir)
-    return (spoints,epoints,cir_obj)
+        pygame.draw.circle(dis,(255,255,255),(pX,pY),2)
+    pygame.display.update()
+##        ppt= Point(pX,pY)
+##        pcir=Circle(ppt,2)
+##        pcir.setFill('white')
+##        pcir.draw(win)
+##        cir_obj.append(pcir)
+    return spoints
     
 
-def is_path(x,y,grid) :
-    for c in grid :
-        if x==c :
-            return True
-        elif y==c :
-            return True
-    return False
+##def is_path(x,y,grid) :
+##    for c in grid :
+##        if x==c :
+##            return True
+##        elif y==c :
+##            return True
+##    return False
 
 def heuristic(x,y,endX,endY) :
     #print endX,endY
