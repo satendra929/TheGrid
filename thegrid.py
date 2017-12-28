@@ -43,7 +43,7 @@ def main() :
     carImg2=pygame.transform.scale(carImg,(20,20))
     startp=pedestrians(dis)
     Thread(target=drive,args=(startX,startY,path,carImg,dis)).start()
-    Thread(target=drive,args=(startX2,startY2,path2,carImg2,dis)).start()
+    #Thread(target=drive,args=(startX2,startY2,path2,carImg2,dis)).start()
     Thread(target=move_pedestrians,args=(startp,dis)).start()
     crashed=False
     while crashed==False :
@@ -78,10 +78,14 @@ def drive (startX,startY,path,carImg,dis) :
                 carImg=pygame.transform.scale(carImg,(20,20))
         cX=px
         cY=py
+        ret=check_vic(px,py,px,py,dis,[])
+        print ret[0]
+        if ret[0]==True :
+            sleep(2)
         dis.blit(carImg,(px-10,py-10))
         pygame.display.update()
-        clock.tick(45)
-        #sleep(0.01)
+        clock.tick(60)
+        sleep(0.001)
     return
 
 def move_pedestrians(startp,dis) :
@@ -98,7 +102,8 @@ def move_pedestrians(startp,dis) :
             startp[co][0]=ppx
             startp[co][1]=ppy
         pygame.display.update()
-        sleep(0.01)
+        clock.tick(60)
+        sleep(0.001)
     return True
 
 def draw_grid(dis,ini) :
@@ -130,6 +135,7 @@ def draw_grid(dis,ini) :
     pygame.draw.circle(dis,(0,255,0),(50,50),5)
     if ini==True :
         pygame.display.update()
+        clock.tick(60)
         return
     else :
         return
@@ -140,7 +146,7 @@ def pedestrians(dis) :
     spoints=[]
     #epoints=[]
     cir_obj=[]
-    for i in range(2) :
+    for i in range(50) :
         spoints.append([random.randint(0,500),random.randint(0,500)])
         #epoints.append([random.randint(0,500),random.randint(0,500)])
     for j in spoints :
@@ -164,11 +170,32 @@ def pedestrians(dis) :
 ##            return True
 ##    return False
 
+def check_vic(x,y,tx,ty,dis,checked) :
+    surr=[(x+1,y),(x-1,y),(x+1,y+1),(x-1,y-1),(x,y+1),(x,y-1)]
+    found=False
+    while len(surr)!= 0 :
+        tempx=surr[0][0]
+        tempy=surr[0][1]
+        if (tempx,tempy) not in checked :
+            checked.append((tempx,tempy))
+            if heuristic(tx,ty,tempx,tempy) <= 3 :
+                val=dis.get_at((tempx,tempy))
+                val=tuple(val[:3])
+                print val
+                if val!=(0,0,255) and val!=(0,0,0) and val!=(255,0,0) :
+                    return (True,checked)
+                else :
+                    ret=check_vic(tempx,tempy,tx,ty,dis,checked)
+                    found=ret[0]
+                    checked=ret[1]
+        del surr[0]
+    return (found,checked)
+            
 def heuristic(x,y,endX,endY) :
     #print endX,endY
     a=math.fabs(x-endX)
     b=math.fabs(y-endY)
-    return math.sqrt((a+b))
+    return math.sqrt((a**2+b**2))
 
 def successors(x,y,dis) :
     succ=[]
